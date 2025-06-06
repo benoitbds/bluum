@@ -7,6 +7,39 @@ let entities = [...initialEntities];
 const entityMeshes = [];
 
 export function initWorld(scene) {
+  const gridSize = 15;
+
+  // Plateau isométrique stylisé
+  const terrain = new THREE.Group();
+  for (let x = 0; x < gridSize; x++) {
+    for (let z = 0; z < gridSize; z++) {
+      const height = 0.1 + Math.random() * 0.3;
+      const geometry = new THREE.BoxGeometry(1, height, 1);
+      const color = new THREE.Color(
+        0.3 + Math.random() * 0.1,
+        0.6 + Math.random() * 0.2,
+        0.3 + Math.random() * 0.1
+      );
+      const material = new THREE.MeshStandardMaterial({ color, flatShading: true });
+      const cell = new THREE.Mesh(geometry, material);
+      cell.position.set(x - gridSize / 2 + 0.5, height / 2, z - gridSize / 2 + 0.5);
+      terrain.add(cell);
+    }
+  }
+  scene.add(terrain);
+
+  // Sol global plus sombre
+  const floorGeo = new THREE.PlaneGeometry(gridSize + 2, gridSize + 2);
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0x222222,
+    side: THREE.DoubleSide,
+    flatShading: true
+  });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -0.05;
+  scene.add(floor);
+
   entities.forEach(e => {
     const mesh = createEntityVisual(e.genes);
     mesh.position.set(e.position.x, 0, e.position.y);
