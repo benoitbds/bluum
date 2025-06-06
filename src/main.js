@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { initWorld, updateWorld } from './world.js';
 
 console.log("Bluum is alive");
@@ -10,11 +11,26 @@ camera.lookAt(0, 0, 0);
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('world'), antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 
+// OrbitControls pour naviguer avec la souris
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enablePan = true;
+controls.minPolarAngle = 0;
+controls.maxPolarAngle = Math.PI / 2 - 0.1;
+controls.minZoom = 0.5;
+controls.maxZoom = 2;
+
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.updateProjectionMatrix();
+});
+
 initWorld(scene);
 animate();
 
 function animate() {
   requestAnimationFrame(animate);
   updateWorld();
+  controls.update();
   renderer.render(scene, camera);
 }
