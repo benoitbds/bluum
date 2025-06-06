@@ -9,36 +9,47 @@ const entityMeshes = [];
 export function initWorld(scene) {
   const gridSize = 15;
 
-  // Plateau isométrique stylisé
-  const terrain = new THREE.Group();
-  for (let x = 0; x < gridSize; x++) {
-    for (let z = 0; z < gridSize; z++) {
-      const height = 0.1 + Math.random() * 0.3;
-      const geometry = new THREE.BoxGeometry(1, height, 1);
+  // Plateau isométrique stylisé adouci
+  const terrainGeo = new THREE.PlaneGeometry(gridSize, gridSize, gridSize, gridSize);
+  const pos = terrainGeo.attributes.position;
+  const colors = [];
+  for (let i = 0; i < pos.count; i++) {
+    // Relief aléatoire doux
+    const y = Math.random() * 0.4;
+    pos.setY(i, y);
 
-      // Couleurs ocres / verts ternes / argiles
-      let h, s, l;
-      const r = Math.random();
-      if (r < 0.4) {
-        h = 0.08 + Math.random() * 0.05;
-        s = 0.4 + Math.random() * 0.1;
-        l = 0.4 + Math.random() * 0.1;
-      } else if (r < 0.8) {
-        h = 0.28 + Math.random() * 0.05;
-        s = 0.2 + Math.random() * 0.1;
-        l = 0.35 + Math.random() * 0.1;
-      } else {
-        h = 0;
-        s = 0;
-        l = 0.3 + Math.random() * 0.1;
-      }
-      const color = new THREE.Color().setHSL(h, s, l);
-      const material = new THREE.MeshStandardMaterial({ color, flatShading: true });
-      const cell = new THREE.Mesh(geometry, material);
-      cell.position.set(x - gridSize / 2 + 0.5, height / 2, z - gridSize / 2 + 0.5);
-      terrain.add(cell);
+    // Palette ocres / verts ternes / gris
+    let h, s, l;
+    const r = Math.random();
+    if (r < 0.4) {
+      h = 0.08 + Math.random() * 0.05;
+      s = 0.4 + Math.random() * 0.1;
+      l = 0.4 + Math.random() * 0.1;
+    } else if (r < 0.8) {
+      h = 0.28 + Math.random() * 0.05;
+      s = 0.2 + Math.random() * 0.1;
+      l = 0.35 + Math.random() * 0.1;
+    } else {
+      h = 0;
+      s = 0;
+      l = 0.3 + Math.random() * 0.1;
     }
+    const c = new THREE.Color().setHSL(h, s, l);
+    colors.push(c.r, c.g, c.b);
   }
+  terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  terrainGeo.computeVertexNormals();
+  terrainGeo.rotateX(-Math.PI / 2);
+
+  const terrainMat = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    flatShading: true,
+    roughness: 0.8,
+    metalness: 0.2,
+    emissive: 0x111111,
+    emissiveIntensity: 0.15
+  });
+  const terrain = new THREE.Mesh(terrainGeo, terrainMat);
   scene.add(terrain);
 
   // Sol global plus sombre
