@@ -20,7 +20,7 @@ export function initWorld(scene) {
 }
 
 export function updateWorld() {
-  // Pour le MVP : toutes les 5s, mise à jour des entités (mutation / mort)
+  // Pour le MVP : mise à jour des entités de façon aléatoire (mutation / mort)
   if (Math.random() < 0.01) {
     entities = simulateGeneration(entities, {});
     // Re-render à faire ici (à affiner)
