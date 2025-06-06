@@ -15,11 +15,24 @@ export function initWorld(scene) {
     for (let z = 0; z < gridSize; z++) {
       const height = 0.1 + Math.random() * 0.3;
       const geometry = new THREE.BoxGeometry(1, height, 1);
-      const color = new THREE.Color(
-        0.3 + Math.random() * 0.1,
-        0.6 + Math.random() * 0.2,
-        0.3 + Math.random() * 0.1
-      );
+
+      // Couleurs ocres / verts ternes / argiles
+      let h, s, l;
+      const r = Math.random();
+      if (r < 0.4) {
+        h = 0.08 + Math.random() * 0.05;
+        s = 0.4 + Math.random() * 0.1;
+        l = 0.4 + Math.random() * 0.1;
+      } else if (r < 0.8) {
+        h = 0.28 + Math.random() * 0.05;
+        s = 0.2 + Math.random() * 0.1;
+        l = 0.35 + Math.random() * 0.1;
+      } else {
+        h = 0;
+        s = 0;
+        l = 0.3 + Math.random() * 0.1;
+      }
+      const color = new THREE.Color().setHSL(h, s, l);
       const material = new THREE.MeshStandardMaterial({ color, flatShading: true });
       const cell = new THREE.Mesh(geometry, material);
       cell.position.set(x - gridSize / 2 + 0.5, height / 2, z - gridSize / 2 + 0.5);
@@ -47,8 +60,11 @@ export function initWorld(scene) {
     entityMeshes.push(mesh);
   });
 
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(10, 10, 10);
+  // Éclairage isométrique doux
+  const ambient = new THREE.AmbientLight(0x555555);
+  scene.add(ambient);
+  const light = new THREE.DirectionalLight(0xffffff, 0.8);
+  light.position.set(15, 25, 20);
   scene.add(light);
 }
 
