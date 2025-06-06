@@ -12,7 +12,7 @@ Bluum est un jeu web contemplatif où des formes de vie abstraites évoluent dan
 
 * Créer un **jeu web addictif mais apaisant** (type tamagotchi cosmique)
 * Basé sur l’émergence visuelle et l’évolution génétique
-* Jouable en navigateur, supportant une persistence serveur
+* Jouable en navigateur, supportant une persistance serveur
 * Rendu en **3D isométrique low-poly** via Three.js
 
 ---
