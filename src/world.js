@@ -8,19 +8,19 @@ const entityMeshes = [];
 
 export function initWorld(scene) {
   const gridSize = 15;
-  const segments = gridSize - 1; // 14 subdivisions -> 15x15 tuiles
 
   // Plateau isométrique stylisé adouci
-  const terrainGeo = new THREE.PlaneGeometry(gridSize, gridSize, segments, segments);
+  const terrainGeo = new THREE.PlaneGeometry(15, 15, 14, 14);
+  terrainGeo.rotateX(-Math.PI / 2); // mise à plat
   const pos = terrainGeo.attributes.position;
   const colors = [];
-  const vertsPerRow = segments + 1;
+  const vertsPerRow = 15; // 14 + 1
 
-  for (let iy = 0; iy <= segments; iy++) {
-    for (let ix = 0; ix <= segments; ix++) {
+  for (let iy = 0; iy <= 14; iy++) {
+    for (let ix = 0; ix <= 14; ix++) {
       const i = iy * vertsPerRow + ix;
       // Relief aléatoire doux sur toute la surface
-      const y = Math.random() * 0.4;
+      const y = Math.random() * 0.2 - 0.1;
       pos.setY(i, y);
 
       // Palette ocres / verts ternes / gris
@@ -46,7 +46,6 @@ export function initWorld(scene) {
   pos.needsUpdate = true;
   terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   terrainGeo.computeVertexNormals();
-  terrainGeo.rotateX(-Math.PI / 2);
 
   const terrainMat = new THREE.MeshStandardMaterial({
     vertexColors: true,
