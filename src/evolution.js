@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 export function simulateGeneration(entities, environment) {
   return entities.map(e => {
     const survives = Math.random() > 0.1;
@@ -10,7 +12,7 @@ export function simulateGeneration(entities, environment) {
 
     const reproduces = Math.random() > 0.8;
     if (reproduces) {
-      return [e, { ...e, id: crypto.randomUUID(), genes: { ...e.genes } }];
+      return [e, { ...e, id: randomUUID(), genes: { ...e.genes } }];
     }
 
     return e;
@@ -22,7 +24,7 @@ export function spawnOffspring(parent) {
   const offspring = JSON.parse(JSON.stringify(parent));
 
   // Assign a new unique ID
-  offspring.id = crypto.randomUUID();
+  offspring.id = randomUUID();
 
   // Slightly mutate each numeric gene (\u00b110%)
   for (const key of Object.keys(offspring.genes)) {
