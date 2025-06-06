@@ -8,35 +8,42 @@ const entityMeshes = [];
 
 export function initWorld(scene) {
   const gridSize = 15;
+  const segments = gridSize - 1; // 14 subdivisions -> 15x15 tuiles
 
   // Plateau isométrique stylisé adouci
-  const terrainGeo = new THREE.PlaneGeometry(gridSize, gridSize, gridSize, gridSize);
+  const terrainGeo = new THREE.PlaneGeometry(gridSize, gridSize, segments, segments);
   const pos = terrainGeo.attributes.position;
   const colors = [];
-  for (let i = 0; i < pos.count; i++) {
-    // Relief aléatoire doux
-    const y = Math.random() * 0.4;
-    pos.setY(i, y);
+  const vertsPerRow = segments + 1;
 
-    // Palette ocres / verts ternes / gris
-    let h, s, l;
-    const r = Math.random();
-    if (r < 0.4) {
-      h = 0.08 + Math.random() * 0.05;
-      s = 0.4 + Math.random() * 0.1;
-      l = 0.4 + Math.random() * 0.1;
-    } else if (r < 0.8) {
-      h = 0.28 + Math.random() * 0.05;
-      s = 0.2 + Math.random() * 0.1;
-      l = 0.35 + Math.random() * 0.1;
-    } else {
-      h = 0;
-      s = 0;
-      l = 0.3 + Math.random() * 0.1;
+  for (let iy = 0; iy <= segments; iy++) {
+    for (let ix = 0; ix <= segments; ix++) {
+      const i = iy * vertsPerRow + ix;
+      // Relief aléatoire doux sur toute la surface
+      const y = Math.random() * 0.4;
+      pos.setY(i, y);
+
+      // Palette ocres / verts ternes / gris
+      let h, s, l;
+      const r = Math.random();
+      if (r < 0.4) {
+        h = 0.08 + Math.random() * 0.05;
+        s = 0.4 + Math.random() * 0.1;
+        l = 0.4 + Math.random() * 0.1;
+      } else if (r < 0.8) {
+        h = 0.28 + Math.random() * 0.05;
+        s = 0.2 + Math.random() * 0.1;
+        l = 0.35 + Math.random() * 0.1;
+      } else {
+        h = 0;
+        s = 0;
+        l = 0.3 + Math.random() * 0.1;
+      }
+      const c = new THREE.Color().setHSL(h, s, l);
+      colors.push(c.r, c.g, c.b);
     }
-    const c = new THREE.Color().setHSL(h, s, l);
-    colors.push(c.r, c.g, c.b);
   }
+  pos.needsUpdate = true;
   terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   terrainGeo.computeVertexNormals();
   terrainGeo.rotateX(-Math.PI / 2);
