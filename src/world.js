@@ -57,8 +57,6 @@ function noise2D(x, y) {
 let entities = [...initialEntities];
 let worldScene;
 const entityMeshes = new Map();
-let lastGeneration = Date.now();
-const GENERATION_INTERVAL = 5000;
 
 // Palette rétro de 32 couleurs (verts ternes, bruns, gris roche)
 const RETRO_PALETTE = [
@@ -209,9 +207,6 @@ export function initWorld(scene) {
 }
 
 export function updateWorld() {
-  const now = Date.now();
-  if (now - lastGeneration < GENERATION_INTERVAL) return;
-  lastGeneration = now;
 
   const beforeIds = new Set(entities.map(e => e.id));
   entities = simulateGeneration(entities, {});
