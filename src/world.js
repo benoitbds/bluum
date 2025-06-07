@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { initialEntities } from './data.js';
 import { simulateGeneration, getStats } from './evolution.js';
-import { createEntityVisual } from './visuals.js';
+import { initInstancedMesh, updateInstances } from './instancing.js';
 
 // Générateur de bruit Perlin simplifié pour terrain organique
 function noise2D(x, y) {
@@ -56,7 +56,7 @@ function noise2D(x, y) {
 
 let entities = [...initialEntities];
 let worldScene;
-const entityMeshes = new Map();
+const MAX_INSTANCES = 2000;
 let tickInterval = 1000;
 let tickTimer;
 let isPaused = false;
@@ -196,13 +196,11 @@ export function initWorld(scene) {
   scene.add(floor);
 
   entities.forEach(e => {
-    const mesh = createEntityVisual(e.genes);
     const terrainHeight = getTerrainHeight(e.position.x + 7, e.position.y + 7);
-    mesh.position.set(e.position.x, terrainHeight + 0.1, e.position.y);
-    mesh.userData.entityId = e.id;
-    scene.add(mesh);
-    entityMeshes.set(e.id, mesh);
+    e.height = terrainHeight + 0.1;
   });
+  initInstancedMesh(scene, MAX_INSTANCES);
+  updateInstances(entities);
 
   // Éclairage isométrique doux
   const ambient = new THREE.AmbientLight(0x555555);
@@ -216,38 +214,25 @@ export function updateWorld() {
 
   if (isPaused || isEnded) return;
 
-  const beforeIds = new Set(entities.map(e => e.id));
   entities = simulateGeneration(entities, {});
-  const afterIds = new Set(entities.map(e => e.id));
 
-  const newEntities = entities.filter(e => !beforeIds.has(e.id));
-  newEntities.forEach(e => {
-    const mesh = createEntityVisual(e.genes);
+  if (entities.length > MAX_INSTANCES) {
+    const sorted = [...entities].sort((a, b) => b.age - a.age);
+    entities = sorted.slice(0, MAX_INSTANCES);
+  }
+
+  entities.forEach(e => {
     const h = getTerrainHeight(e.position.x + 7, e.position.y + 7);
-    mesh.position.set(e.position.x, h + 0.1, e.position.y);
-    mesh.userData.entityId = e.id;
-    worldScene.add(mesh);
-    entityMeshes.set(e.id, mesh);
+    e.height = h + 0.1;
   });
 
-  for (const id of beforeIds) {
-    if (!afterIds.has(id)) {
-      const mesh = entityMeshes.get(id);
-      if (mesh) {
-        worldScene.remove(mesh);
-        entityMeshes.delete(id);
-      }
-    }
-  }
+  updateInstances(entities);
 
   maxPopulation = Math.max(maxPopulation, entities.length);
 }
 
 function clearEntities() {
-  for (const mesh of entityMeshes.values()) {
-    worldScene.remove(mesh);
-  }
-  entityMeshes.clear();
+  updateInstances([]);
 }
 
 function resetStats() {
@@ -267,17 +252,14 @@ export function resetWorld() {
     base.id = crypto.randomUUID();
     base.position = { x: i - 1, y: 0 };
     entities.push(base);
-    const mesh = createEntityVisual(base.genes);
     const h = getTerrainHeight(base.position.x + 7, base.position.y + 7);
-    mesh.position.set(base.position.x, h + 0.1, base.position.y);
-    mesh.userData.entityId = base.id;
-    worldScene.add(mesh);
-    entityMeshes.set(base.id, mesh);
+    base.height = h + 0.1;
   }
   maxPopulation = entities.length;
   endSummary = null;
   isEnded = false;
   resetStats();
+  updateInstances(entities);
 }
 
 export function setTickInterval(ms) {
