@@ -2,7 +2,8 @@
   position: fixed;
   top: 0;
   left: 0;
-  font-family: 'Press Start 2P', 'VT323', monospace;
+  width: 300px;
+  font-family: 'VT323', monospace;
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid #555;
   padding: 6px;
