@@ -1,4 +1,5 @@
 
+import { params } from './params.js';
 const stats = {
   tick: 0,
   entities: 0,
@@ -22,7 +23,7 @@ export function simulateGeneration(entities, environment) {
     entity.age = (entity.age ?? 0) + 1;
 
     const size = entity.genes.size ?? 0.5;
-    const energyCost = 1 + (size * 0.5);
+    const energyCost = params.survivalCost + (size * 0.5);
 
     const x = Math.round(entity.position.x + 7);
     const z = Math.round(entity.position.y + 7);
@@ -32,8 +33,8 @@ export function simulateGeneration(entities, environment) {
       energyMap[x][z] = available - energyCost;
       next.push(entity);
 
-      if (Math.random() < 0.2 && energyMap[x][z] >= energyCost * 3) {
-        energyMap[x][z] -= energyCost * 3;
+      if (Math.random() < 0.2 && energyMap[x][z] >= energyCost * params.reproMul) {
+        energyMap[x][z] -= energyCost * params.reproMul;
         const offspring = spawnOffspring(entity);
         if (offspring) {
           offspring.age = 0;
@@ -62,11 +63,12 @@ export function spawnOffspring(parent) {
 
   offspring.speciesId = parent.speciesId;
 
-  // Slightly mutate each numeric gene (\u00b110%)
+  // Slightly mutate each numeric gene (\u00b1mutationRate)
   for (const key of Object.keys(offspring.genes)) {
     const value = offspring.genes[key];
     if (typeof value === 'number') {
-      const variation = (Math.random() * 0.2) - 0.1; // -10% to +10%
+      const range = params.mutationRate;
+      const variation = (Math.random() * (range * 2)) - range;
       offspring.genes[key] = value + value * variation;
     }
   }

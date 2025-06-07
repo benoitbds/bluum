@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { initialEntities } from './data.js';
 import { simulateGeneration, getStats } from './evolution.js';
 import { initInstancedMesh, updateInstances } from './instancing.js';
+import { params } from './params.js';
 
 // Générateur de bruit Perlin simplifié pour terrain organique
 function noise2D(x, y) {
@@ -86,14 +87,19 @@ const terrainHeightCache = new Map();
 
 function initEnergyMap() {
   energyMap = Array.from({ length: GRID_SIZE }, () =>
-    Array.from({ length: GRID_SIZE }, () => 5 + Math.random() * 5)
+    Array.from({ length: GRID_SIZE }, () =>
+      params.energyMax / 2 + Math.random() * (params.energyMax / 2)
+    )
   );
 }
 
 function regenEnergy() {
   for (let x = 0; x < GRID_SIZE; x++) {
     for (let z = 0; z < GRID_SIZE; z++) {
-      energyMap[x][z] = Math.min(10, energyMap[x][z] + 0.2);
+      energyMap[x][z] = Math.min(
+        params.energyMax,
+        energyMap[x][z] + params.regen
+      );
     }
   }
 }
@@ -289,6 +295,15 @@ export function setTickInterval(ms) {
   if (!isPaused && !isEnded) {
     clearInterval(tickTimer);
     tickTimer = setInterval(updateWorld, tickInterval);
+  }
+}
+
+export function setEnergyMax(max) {
+  params.energyMax = max;
+  for (let x = 0; x < GRID_SIZE; x++) {
+    for (let z = 0; z < GRID_SIZE; z++) {
+      energyMap[x][z] = Math.min(params.energyMax, energyMap[x][z]);
+    }
   }
 }
 
