@@ -55,7 +55,10 @@ function noise2D(x, y) {
 }
 
 let entities = [...initialEntities];
-const entityMeshes = [];
+let worldScene;
+const entityMeshes = new Map();
+let lastGeneration = Date.now();
+const GENERATION_INTERVAL = 5000;
 
 // Palette rétro de 32 couleurs (verts ternes, bruns, gris roche)
 const RETRO_PALETTE = [
@@ -164,6 +167,7 @@ function getTerrainHeight(x, y) {
 }
 
 export function initWorld(scene) {
+  worldScene = scene;
   const gridSize = 15;
 
   // Créer le diorama épais rétro
@@ -191,8 +195,9 @@ export function initWorld(scene) {
     const mesh = createEntityVisual(e.genes);
     const terrainHeight = getTerrainHeight(e.position.x + 7, e.position.y + 7);
     mesh.position.set(e.position.x, terrainHeight + 0.1, e.position.y);
+    mesh.userData.entityId = e.id;
     scene.add(mesh);
-    entityMeshes.push(mesh);
+    entityMeshes.set(e.id, mesh);
   });
 
   // Éclairage isométrique doux
@@ -204,9 +209,31 @@ export function initWorld(scene) {
 }
 
 export function updateWorld() {
-  // Pour le MVP : mise à jour des entités de façon aléatoire (mutation / mort)
-  if (Math.random() < 0.01) {
-    entities = simulateGeneration(entities, {});
-    // Re-render à faire ici (à affiner)
+  const now = Date.now();
+  if (now - lastGeneration < GENERATION_INTERVAL) return;
+  lastGeneration = now;
+
+  const beforeIds = new Set(entities.map(e => e.id));
+  entities = simulateGeneration(entities, {});
+  const afterIds = new Set(entities.map(e => e.id));
+
+  const newEntities = entities.filter(e => !beforeIds.has(e.id));
+  newEntities.forEach(e => {
+    const mesh = createEntityVisual(e.genes);
+    const h = getTerrainHeight(e.position.x + 7, e.position.y + 7);
+    mesh.position.set(e.position.x, h + 0.1, e.position.y);
+    mesh.userData.entityId = e.id;
+    worldScene.add(mesh);
+    entityMeshes.set(e.id, mesh);
+  });
+
+  for (const id of beforeIds) {
+    if (!afterIds.has(id)) {
+      const mesh = entityMeshes.get(id);
+      if (mesh) {
+        worldScene.remove(mesh);
+        entityMeshes.delete(id);
+      }
+    }
   }
 }
