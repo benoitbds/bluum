@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { initWorld, newGame, togglePause, endGame, setTickInterval, setEnergyMax } from './world.js';
+import { initWorld, newGame, togglePause, endGame, setTickInterval, setEnergyMax, applyDelta } from './world.js';
 import { updateHUD } from './hud.js';
 import { getStats } from './evolution.js';
 import { initTempoSlider } from './tempoSlider.js';
@@ -33,7 +33,19 @@ window.addEventListener('resize', () => {
 });
 
 initWorld(scene);
-newGame();
+const useWS = window.location.protocol.startsWith('ws');
+if (useWS) {
+  const ws = new WebSocket(`${window.location.protocol}//${window.location.host}`);
+  ws.addEventListener('message', (ev) => {
+    const msg = JSON.parse(ev.data);
+    if (msg.data) applyDelta(msg.data);
+  });
+  ws.addEventListener('close', () => {
+    newGame();
+  });
+} else {
+  newGame();
+}
 
 initTempoSlider((newMs) => {
   setTickInterval(newMs);
