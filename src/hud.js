@@ -1,7 +1,8 @@
-export function updateHUD({ tick, entities, species, deaths }) {
+export function updateHUD({ tick, entities, species, deaths, edgeRejects }) {
   const hud = document.getElementById('hud');
   if (!hud) return;
   let html = `Tick: ${tick}<br>Entities: ${entities}<br>Species: ${species}`;
+  html += `<br>Edge rejects: ${edgeRejects}`;
 
   if (deaths && deaths.length) {
     const recent = deaths.slice(-5);

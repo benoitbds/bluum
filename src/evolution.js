@@ -3,7 +3,8 @@ const stats = {
   tick: 0,
   entities: 0,
   species: 0,
-  deaths: []
+  deaths: [],
+  edgeRejects: 0
 };
 
 export function getStats() {
@@ -19,8 +20,10 @@ export function simulateGeneration(entities, environment) {
 
     if (Math.random() < 0.2) {
       const offspring = spawnOffspring(entity);
-      offspring.age = 0;
-      next.push(offspring);
+      if (offspring) {
+        offspring.age = 0;
+        next.push(offspring);
+      }
     }
   }
 
@@ -63,11 +66,26 @@ export function spawnOffspring(parent) {
     }
   }
 
-  // Position the offspring near the parent (\u00b11 tile)
-  offspring.position = {
-    x: parent.position.x + Math.floor(Math.random() * 3) - 1,
-    y: parent.position.y + Math.floor(Math.random() * 3) - 1
-  };
+  // Offset of exactly \u00b11 tile
+  const offsetX = Math.random() < 0.5 ? -1 : 1;
+  const offsetZ = Math.random() < 0.5 ? -1 : 1;
+
+  const SAFE_MIN = -7;
+  const SAFE_MAX = 7;
+
+  let newX = parent.position.x + offsetX;
+  let newZ = parent.position.y + offsetZ;
+
+  const clampedX = Math.min(Math.max(newX, SAFE_MIN), SAFE_MAX);
+  const clampedZ = Math.min(Math.max(newZ, SAFE_MIN), SAFE_MAX);
+
+  if (Math.abs(clampedX - newX) > 0.2 || Math.abs(clampedZ - newZ) > 0.2) {
+    stats.edgeRejects++;
+    return null;
+  }
+
+  // Position the offspring within the safe zone
+  offspring.position = { x: clampedX, y: clampedZ };
 
   return offspring;
 }
