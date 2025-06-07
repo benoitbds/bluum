@@ -1,0 +1,30 @@
+#paramsPanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  font-family: monospace;
+  font-size: 8px;
+  background: #000a;
+  border: 1px solid #555;
+  padding: 4px;
+  color: #fff;
+}
+
+#paramsPanel input[type="range"] {
+  width: 100px;
+}
+
+#paramsToggle {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+  font-family: monospace;
+  font-size: 10px;
+  background: #000a;
+  border: 1px solid #555;
+  color: #fff;
+  cursor: pointer;
+}
