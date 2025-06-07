@@ -1,21 +1,25 @@
 
 export function simulateGeneration(entities, environment) {
-  return entities.map(e => {
-    const survives = Math.random() > 0.1;
-    if (!survives) return null;
+  let next = [];
+  for (const entity of entities) {
+    entity.age = (entity.age ?? 0) + 1;
+    next.push(entity);
 
-    const mutated = Math.random() < e.genes.mutationRate;
-    if (mutated) {
-      e.genes.size += (Math.random() - 0.5) * 0.2;
+    if (Math.random() < 0.2) {
+      const offspring = spawnOffspring(entity);
+      offspring.age = 0;
+      next.push(offspring);
     }
+  }
 
-    const reproduces = Math.random() > 0.8;
-    if (reproduces) {
-      return [e, { ...e, id: crypto.randomUUID(), genes: { ...e.genes } }];
-    }
+  if (next.length > 50) {
+    const killCount = Math.floor(next.length * 0.1);
+    const sorted = [...next].sort((a, b) => b.age - a.age);
+    const toRemove = new Set(sorted.slice(0, killCount).map(e => e.id));
+    next = next.filter(e => !toRemove.has(e.id));
+  }
 
-    return e;
-  }).flat().filter(Boolean);
+  return next;
 }
 
 export function spawnOffspring(parent) {
