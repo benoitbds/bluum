@@ -56,7 +56,9 @@ function noise2D(x, y) {
 
 let entities = [...initialEntities];
 let worldScene;
-const MAX_INSTANCES = 2000;
+const MAX_INSTANCES = 100000;
+const GRID_SIZE = 15;
+let energyMap = [];
 let tickInterval = 1000;
 let tickTimer;
 let isPaused = false;
@@ -81,6 +83,20 @@ const RETRO_PALETTE = [
 
 // Cache pour les hauteurs du terrain  
 const terrainHeightCache = new Map();
+
+function initEnergyMap() {
+  energyMap = Array.from({ length: GRID_SIZE }, () =>
+    Array.from({ length: GRID_SIZE }, () => 5 + Math.random() * 5)
+  );
+}
+
+function regenEnergy() {
+  for (let x = 0; x < GRID_SIZE; x++) {
+    for (let z = 0; z < GRID_SIZE; z++) {
+      energyMap[x][z] = Math.min(10, energyMap[x][z] + 0.2);
+    }
+  }
+}
 
 // Fonction pour créer le diorama épais avec relief
 function createTerrain() {
@@ -172,7 +188,8 @@ function getTerrainHeight(x, y) {
 
 export function initWorld(scene) {
   worldScene = scene;
-  const gridSize = 15;
+  const gridSize = GRID_SIZE;
+  initEnergyMap();
 
   // Créer le diorama épais rétro
   const terrainGeo = createTerrain();
@@ -200,7 +217,7 @@ export function initWorld(scene) {
     e.height = terrainHeight + 0.1;
   });
   initInstancedMesh(scene, MAX_INSTANCES);
-  updateInstances(entities);
+  updateInstances(entities.slice(0, MAX_INSTANCES));
 
   // Éclairage isométrique doux
   const ambient = new THREE.AmbientLight(0x555555);
@@ -214,19 +231,20 @@ export function updateWorld() {
 
   if (isPaused || isEnded) return;
 
-  entities = simulateGeneration(entities, {});
-
-  if (entities.length > MAX_INSTANCES) {
-    const sorted = [...entities].sort((a, b) => b.age - a.age);
-    entities = sorted.slice(0, MAX_INSTANCES);
-  }
+  regenEnergy();
+  entities = simulateGeneration(entities, { energyMap });
 
   entities.forEach(e => {
     const h = getTerrainHeight(e.position.x + 7, e.position.y + 7);
     e.height = h + 0.1;
   });
 
-  updateInstances(entities);
+  updateInstances(entities.slice(0, MAX_INSTANCES));
+
+  const energyTotal = energyMap.flat().reduce((s, v) => s + v, 0);
+  const stats = getStats();
+  stats.energyTotal = energyTotal;
+  stats.energyAvg = energyTotal / (GRID_SIZE * GRID_SIZE);
 
   maxPopulation = Math.max(maxPopulation, entities.length);
 }
@@ -242,11 +260,15 @@ function resetStats() {
   stats.species = new Set(entities.map(e => e.speciesId)).size;
   stats.deaths = [];
   stats.edgeRejects = 0;
+  const total = energyMap.flat().reduce((s, v) => s + v, 0);
+  stats.energyTotal = total;
+  stats.energyAvg = total / (GRID_SIZE * GRID_SIZE);
 }
 
 export function resetWorld() {
   clearEntities();
   entities = [];
+  initEnergyMap();
   for (let i = 0; i < 3; i++) {
     const base = JSON.parse(JSON.stringify(initialEntities[0]));
     base.id = crypto.randomUUID();
@@ -259,7 +281,7 @@ export function resetWorld() {
   endSummary = null;
   isEnded = false;
   resetStats();
-  updateInstances(entities);
+  updateInstances(entities.slice(0, MAX_INSTANCES));
 }
 
 export function setTickInterval(ms) {

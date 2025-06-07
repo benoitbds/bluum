@@ -1,6 +1,6 @@
 import { isWorldPaused, getEndSummary } from './world.js';
 
-export function updateHUD({ tick, entities, species, deaths, edgeRejects }) {
+export function updateHUD({ tick, entities, species, deaths, edgeRejects, energyTotal, energyAvg }) {
   const hud = document.getElementById('hud');
   if (!hud) return;
 
@@ -11,6 +11,7 @@ export function updateHUD({ tick, entities, species, deaths, edgeRejects }) {
   }
 
   let html = `Tick: ${tick}<br>Entities: ${entities}<br>Species: ${species}`;
+  html += `<br>Energy total: ${energyTotal.toFixed(1)}<br>Avg/tile: ${energyAvg.toFixed(2)}`;
   html += `<br>Edge rejects: ${edgeRejects}`;
 
   if (deaths && deaths.length) {
