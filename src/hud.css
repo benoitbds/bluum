@@ -1,0 +1,12 @@
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  font-family: 'Press Start 2P', 'VT323', monospace;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #555;
+  padding: 6px;
+  color: #fff;
+  text-shadow: 1px 1px #000;
+  pointer-events: none;
+}

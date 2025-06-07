@@ -1,6 +1,18 @@
 
+const stats = {
+  tick: 0,
+  entities: 0,
+  species: 0,
+  deaths: []
+};
+
+export function getStats() {
+  return stats;
+}
+
 export function simulateGeneration(entities, environment) {
   let next = [];
+  const deaths = [];
   for (const entity of entities) {
     entity.age = (entity.age ?? 0) + 1;
     next.push(entity);
@@ -16,8 +28,19 @@ export function simulateGeneration(entities, environment) {
     const killCount = Math.floor(next.length * 0.1);
     const sorted = [...next].sort((a, b) => b.age - a.age);
     const toRemove = new Set(sorted.slice(0, killCount).map(e => e.id));
-    next = next.filter(e => !toRemove.has(e.id));
+    next = next.filter(e => {
+      if (toRemove.has(e.id)) {
+        deaths.push(e.id);
+        return false;
+      }
+      return true;
+    });
   }
+
+  stats.tick++;
+  stats.entities = next.length;
+  stats.species = new Set(next.map(e => e.speciesId)).size;
+  stats.deaths = deaths;
 
   return next;
 }
@@ -28,6 +51,8 @@ export function spawnOffspring(parent) {
 
   // Assign a new unique ID
   offspring.id = crypto.randomUUID();
+
+  offspring.speciesId = parent.speciesId;
 
   // Slightly mutate each numeric gene (\u00b110%)
   for (const key of Object.keys(offspring.genes)) {

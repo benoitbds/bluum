@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { initWorld, updateWorld } from './world.js';
+import { updateHUD } from './hud.js';
+import { getStats } from './evolution.js';
 
 console.log("Bluum is alive");
 const scene = new THREE.Scene();
@@ -33,6 +35,7 @@ animate();
 function animate() {
   requestAnimationFrame(animate);
   updateWorld();
+  updateHUD(getStats());
   controls.update();
   renderer.render(scene, camera);
 }
