@@ -4,7 +4,9 @@ const stats = {
   entities: 0,
   species: 0,
   deaths: [],
-  edgeRejects: 0
+  edgeRejects: 0,
+  energyTotal: 0,
+  energyAvg: 0
 };
 
 export function getStats() {
@@ -12,32 +14,35 @@ export function getStats() {
 }
 
 export function simulateGeneration(entities, environment) {
+  const { energyMap } = environment;
   let next = [];
   const deaths = [];
+
   for (const entity of entities) {
     entity.age = (entity.age ?? 0) + 1;
-    next.push(entity);
 
-    if (Math.random() < 0.2) {
-      const offspring = spawnOffspring(entity);
-      if (offspring) {
-        offspring.age = 0;
-        next.push(offspring);
+    const size = entity.genes.size ?? 0.5;
+    const energyCost = 1 + (size * 0.5);
+
+    const x = Math.round(entity.position.x + 7);
+    const z = Math.round(entity.position.y + 7);
+    const available = energyMap[x]?.[z] ?? 0;
+
+    if (available >= energyCost) {
+      energyMap[x][z] = available - energyCost;
+      next.push(entity);
+
+      if (Math.random() < 0.2 && energyMap[x][z] >= energyCost * 3) {
+        energyMap[x][z] -= energyCost * 3;
+        const offspring = spawnOffspring(entity);
+        if (offspring) {
+          offspring.age = 0;
+          next.push(offspring);
+        }
       }
+    } else {
+      deaths.push(entity.id);
     }
-  }
-
-  if (next.length > 50) {
-    const killCount = Math.floor(next.length * 0.1);
-    const sorted = [...next].sort((a, b) => b.age - a.age);
-    const toRemove = new Set(sorted.slice(0, killCount).map(e => e.id));
-    next = next.filter(e => {
-      if (toRemove.has(e.id)) {
-        deaths.push(e.id);
-        return false;
-      }
-      return true;
-    });
   }
 
   stats.tick++;
