@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { initWorld, updateWorld } from './world.js';
+import { initWorld, newGame, togglePause, endGame, setTickInterval } from './world.js';
 import { updateHUD } from './hud.js';
 import { getStats } from './evolution.js';
 import { initTempoSlider } from './tempoSlider.js';
+import { initControls } from './controls.js';
 
 console.log("Bluum is alive");
 const scene = new THREE.Scene();
@@ -31,14 +32,13 @@ window.addEventListener('resize', () => {
 });
 
 initWorld(scene);
-let tickInterval = 1000;
-let tickTimer = setInterval(updateWorld, tickInterval);
+newGame();
 
 initTempoSlider((newMs) => {
-  clearInterval(tickTimer);
-  tickInterval = newMs;
-  tickTimer = setInterval(updateWorld, tickInterval);
+  setTickInterval(newMs);
 });
+
+initControls(newGame, togglePause, endGame);
 
 animate();
 

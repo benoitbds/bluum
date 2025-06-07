@@ -32,3 +32,36 @@
   background: #aaa;
   cursor: pointer;
 }
+
+#controls {
+  position: fixed;
+  bottom: 24px;
+  left: 0;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #555;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+}
+
+#controls .pixel {
+  background: #111;
+  color: #fff;
+  border: 1px solid #555;
+  margin-right: 2px;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+#hudPause {
+  position: fixed;
+  top: 0;
+  right: 0;
+  font-family: 'VT323', monospace;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #555;
+  padding: 4px;
+  color: #fff;
+  text-shadow: 1px 1px #000;
+  display: none;
+}

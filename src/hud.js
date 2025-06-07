@@ -1,6 +1,15 @@
+import { isWorldPaused, getEndSummary } from './world.js';
+
 export function updateHUD({ tick, entities, species, deaths, edgeRejects }) {
   const hud = document.getElementById('hud');
   if (!hud) return;
+
+  const summary = getEndSummary();
+  if (summary) {
+    hud.innerHTML = `Ticks: ${summary.ticks}<br>Pop max: ${summary.popMax}<br>Species: ${summary.species}`;
+    return;
+  }
+
   let html = `Tick: ${tick}<br>Entities: ${entities}<br>Species: ${species}`;
   html += `<br>Edge rejects: ${edgeRejects}`;
 
@@ -13,4 +22,13 @@ export function updateHUD({ tick, entities, species, deaths, edgeRejects }) {
   }
 
   hud.innerHTML = html;
+
+  let pause = document.getElementById('hudPause');
+  if (!pause) {
+    pause = document.createElement('div');
+    pause.id = 'hudPause';
+    document.body.appendChild(pause);
+  }
+  pause.textContent = '⏸ PAUSE';
+  pause.style.display = isWorldPaused() ? 'block' : 'none';
 }
