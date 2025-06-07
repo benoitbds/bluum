@@ -346,3 +346,10 @@ export function isWorldPaused() {
 export function getEndSummary() {
   return endSummary;
 }
+
+export function applyDelta(delta) {
+  if (Array.isArray(delta.entities)) {
+    entities = delta.entities;
+    updateInstances(entities.slice(0, MAX_INSTANCES));
+  }
+}
