@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { initialEntities } from './data.js';
-import { simulateGeneration } from './evolution.js';
+import { simulateGeneration, getStats } from './evolution.js';
 import { createEntityVisual } from './visuals.js';
 
 // Générateur de bruit Perlin simplifié pour terrain organique
@@ -57,6 +57,12 @@ function noise2D(x, y) {
 let entities = [...initialEntities];
 let worldScene;
 const entityMeshes = new Map();
+let tickInterval = 1000;
+let tickTimer;
+let isPaused = false;
+let isEnded = false;
+let maxPopulation = entities.length;
+let endSummary = null;
 
 // Palette rétro de 32 couleurs (verts ternes, bruns, gris roche)
 const RETRO_PALETTE = [
@@ -208,6 +214,8 @@ export function initWorld(scene) {
 
 export function updateWorld() {
 
+  if (isPaused || isEnded) return;
+
   const beforeIds = new Set(entities.map(e => e.id));
   entities = simulateGeneration(entities, {});
   const afterIds = new Set(entities.map(e => e.id));
@@ -231,4 +239,91 @@ export function updateWorld() {
       }
     }
   }
+
+  maxPopulation = Math.max(maxPopulation, entities.length);
+}
+
+function clearEntities() {
+  for (const mesh of entityMeshes.values()) {
+    worldScene.remove(mesh);
+  }
+  entityMeshes.clear();
+}
+
+function resetStats() {
+  const stats = getStats();
+  stats.tick = 0;
+  stats.entities = entities.length;
+  stats.species = new Set(entities.map(e => e.speciesId)).size;
+  stats.deaths = [];
+  stats.edgeRejects = 0;
+}
+
+export function resetWorld() {
+  clearEntities();
+  entities = [];
+  for (let i = 0; i < 3; i++) {
+    const base = JSON.parse(JSON.stringify(initialEntities[0]));
+    base.id = crypto.randomUUID();
+    base.position = { x: i - 1, y: 0 };
+    entities.push(base);
+    const mesh = createEntityVisual(base.genes);
+    const h = getTerrainHeight(base.position.x + 7, base.position.y + 7);
+    mesh.position.set(base.position.x, h + 0.1, base.position.y);
+    mesh.userData.entityId = base.id;
+    worldScene.add(mesh);
+    entityMeshes.set(base.id, mesh);
+  }
+  maxPopulation = entities.length;
+  endSummary = null;
+  isEnded = false;
+  resetStats();
+}
+
+export function setTickInterval(ms) {
+  tickInterval = ms;
+  if (!isPaused && !isEnded) {
+    clearInterval(tickTimer);
+    tickTimer = setInterval(updateWorld, tickInterval);
+  }
+}
+
+export function newGame() {
+  clearInterval(tickTimer);
+  isPaused = false;
+  resetWorld();
+  tickTimer = setInterval(updateWorld, tickInterval);
+}
+
+export function togglePause() {
+  if (isPaused) {
+    tickTimer = setInterval(updateWorld, tickInterval);
+    isPaused = false;
+  } else {
+    clearInterval(tickTimer);
+    isPaused = true;
+  }
+  return isPaused;
+}
+
+export function endGame() {
+  if (isEnded) return endSummary;
+  clearInterval(tickTimer);
+  isPaused = true;
+  isEnded = true;
+  const stats = getStats();
+  endSummary = {
+    ticks: stats.tick,
+    popMax: maxPopulation,
+    species: stats.species
+  };
+  return endSummary;
+}
+
+export function isWorldPaused() {
+  return isPaused;
+}
+
+export function getEndSummary() {
+  return endSummary;
 }
