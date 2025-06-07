@@ -3,57 +3,174 @@ import { initialEntities } from './data.js';
 import { simulateGeneration } from './evolution.js';
 import { createEntityVisual } from './visuals.js';
 
+// Générateur de bruit Perlin simplifié pour terrain organique
+function noise2D(x, y) {
+  const p = [151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225,
+    140, 36, 103, 30, 69, 142, 8, 99, 37, 240, 21, 10, 23, 190, 6, 148,
+    247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32,
+    57, 177, 33, 88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175,
+    74, 165, 71, 134, 139, 48, 27, 166, 77, 146, 158, 231, 83, 111, 229, 122,
+    60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244, 102, 143, 54,
+    65, 25, 63, 161, 1, 216, 80, 73, 209, 76, 132, 187, 208, 89, 18, 169,
+    200, 196, 135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, 3, 64,
+    52, 217, 226, 250, 124, 123, 5, 202, 38, 147, 118, 126, 255, 82, 85, 212,
+    207, 206, 59, 227, 47, 16, 58, 17, 182, 189, 28, 42, 223, 183, 170, 213,
+    119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9,
+    129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104,
+    218, 246, 97, 228, 251, 34, 242, 193, 238, 210, 144, 12, 191, 179, 162, 241,
+    81, 51, 145, 235, 249, 14, 239, 107, 49, 192, 214, 31, 181, 199, 106, 157,
+    184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93,
+    222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180];
+  
+  const perm = [...p, ...p];
+  
+  function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+  function lerp(t, a, b) { return a + t * (b - a); }
+  function grad(hash, x, y) {
+    const h = hash & 15;
+    const u = h < 8 ? x : y;
+    const v = h < 4 ? y : h === 12 || h === 14 ? x : 0;
+    return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+  }
+  
+  const X = Math.floor(x) & 255;
+  const Y = Math.floor(y) & 255;
+  x -= Math.floor(x);
+  y -= Math.floor(y);
+  
+  const u = fade(x);
+  const v = fade(y);
+  
+  const A = perm[X] + Y;
+  const AA = perm[A];
+  const AB = perm[A + 1];
+  const B = perm[X + 1] + Y;
+  const BA = perm[B];
+  const BB = perm[B + 1];
+  
+  return lerp(v, lerp(u, grad(perm[AA], x, y),
+                         grad(perm[BA], x - 1, y)),
+                 lerp(u, grad(perm[AB], x, y - 1),
+                         grad(perm[BB], x - 1, y - 1)));
+}
+
 let entities = [...initialEntities];
 const entityMeshes = [];
+
+// Palette rétro de 32 couleurs (verts ternes, bruns, gris roche)
+const RETRO_PALETTE = [
+  // Verts ternes (8 couleurs)
+  0x3d5a3d, 0x4a6b4a, 0x576857, 0x647564,
+  0x718271, 0x7e8f7e, 0x8b9c8b, 0x98a998,
+  // Bruns (12 couleurs)  
+  0x5d4e37, 0x6b5b42, 0x79684d, 0x877558,
+  0x958263, 0xa38f6e, 0xb19c79, 0xbfa984,
+  0x8b7355, 0x9d8066, 0xaf8d77, 0xc19a88,
+  // Gris roche (12 couleurs)
+  0x555555, 0x626262, 0x6f6f6f, 0x7c7c7c,
+  0x898989, 0x969696, 0xa3a3a3, 0xb0b0b0,
+  0x4a4a4a, 0x575757, 0x646464, 0x717171
+];
+
+// Cache pour les hauteurs du terrain  
+const terrainHeightCache = new Map();
+
+// Fonction pour créer le diorama épais avec relief
+function createTerrain() {
+  // BoxGeometry avec subdivisions sur la face supérieure
+  const geometry = new THREE.BoxGeometry(15, 2, 15, 14, 1, 14);
+  
+  const positions = geometry.attributes.position;
+  const colors = [];
+  
+  // Identifier et modifier les vertices de la face supérieure (y = 1)
+  for (let i = 0; i < positions.count; i++) {
+    const x = positions.getX(i);
+    const y = positions.getY(i);
+    const z = positions.getZ(i);
+    
+    // Si c'est un vertex de la face supérieure
+    if (Math.abs(y - 1) < 0.001) {
+      // Convertir les coordonnées du vertex en indices de grille
+      const gridX = Math.round((x + 7.5) / (15/14));
+      const gridZ = Math.round((z + 7.5) / (15/14));
+      
+      // Appliquer du bruit Perlin léger pour le relief
+      const noiseScale = 0.2;
+      const amplitude = 0.3;
+      let height = noise2D(gridX * noiseScale, gridZ * noiseScale) * amplitude;
+      
+      // Adoucissement des bords
+      const edgeX = Math.min(gridX, 14 - gridX) / 7;
+      const edgeZ = Math.min(gridZ, 14 - gridZ) / 7;
+      const edgeFactor = Math.min(edgeX, edgeZ);
+      if (edgeFactor > 0) {
+        const smoothEdge = edgeFactor * edgeFactor * (3 - 2 * edgeFactor);
+        height *= smoothEdge;
+      }
+      
+      // Appliquer la nouvelle hauteur
+      positions.setY(i, 1 + height);
+    }
+    
+    // Couleurs basées sur la hauteur et position (utilise y mis à jour)
+    const currentY = positions.getY(i);
+    
+    let colorIndex;
+    if (currentY > 0.5) {
+      // Face supérieure : couleur basée sur hauteur et bruit
+      const normalizedHeight = (currentY - 1) / 0.3;
+      const noiseValue = noise2D(x * 0.3, z * 0.3);
+      colorIndex = Math.floor((normalizedHeight + noiseValue + 1) * 15.5) % 32;
+    } else {
+      // Faces latérales : couleurs plus sombres
+      colorIndex = Math.floor(Math.random() * 8) + 24; // Gris plus sombres
+    }
+    
+    const color = new THREE.Color(RETRO_PALETTE[colorIndex]);
+    colors.push(color.r, color.g, color.b);
+  }
+  
+  positions.needsUpdate = true;
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geometry.computeVertexNormals();
+  
+  return geometry;
+}
+
+// Fonction pour obtenir la hauteur du terrain à une position donnée
+function getTerrainHeight(x, y) {
+  const key = `${Math.floor(x)},${Math.floor(y)}`;
+  if (terrainHeightCache.has(key)) {
+    return terrainHeightCache.get(key);
+  }
+  
+  // Recalcul simplifié pour le diorama
+  const noiseScale = 0.2;
+  const amplitude = 0.3;
+  let height = 1 + noise2D(x * noiseScale, y * noiseScale) * amplitude;
+  
+  // Adoucissement des bords
+  const edgeX = Math.min(x, 14 - x) / 7;
+  const edgeY = Math.min(y, 14 - y) / 7;
+  const edgeFactor = Math.min(Math.max(edgeX, 0), Math.max(edgeY, 0));
+  if (edgeFactor > 0) {
+    const smoothEdge = edgeFactor * edgeFactor * (3 - 2 * edgeFactor);
+    height = 1 + (height - 1) * smoothEdge;
+  }
+  
+  terrainHeightCache.set(key, height);
+  return height;
+}
 
 export function initWorld(scene) {
   const gridSize = 15;
 
-  // Plateau isométrique stylisé adouci
-  const terrainGeo = new THREE.PlaneGeometry(15, 15, 14, 14);
-  terrainGeo.rotateX(-Math.PI / 2); // mise à plat
-  const pos = terrainGeo.attributes.position;
-  const colors = [];
-  const vertsPerRow = 15; // 14 + 1
-
-  for (let iy = 0; iy <= 14; iy++) {
-    for (let ix = 0; ix <= 14; ix++) {
-      const i = iy * vertsPerRow + ix;
-      // Relief aléatoire doux sur toute la surface
-      const y = Math.random() * 0.2 - 0.1;
-      pos.setY(i, y);
-
-      // Palette ocres / verts ternes / gris
-      let h, s, l;
-      const r = Math.random();
-      if (r < 0.4) {
-        h = 0.08 + Math.random() * 0.05;
-        s = 0.4 + Math.random() * 0.1;
-        l = 0.4 + Math.random() * 0.1;
-      } else if (r < 0.8) {
-        h = 0.28 + Math.random() * 0.05;
-        s = 0.2 + Math.random() * 0.1;
-        l = 0.35 + Math.random() * 0.1;
-      } else {
-        h = 0;
-        s = 0;
-        l = 0.3 + Math.random() * 0.1;
-      }
-      const c = new THREE.Color().setHSL(h, s, l);
-      colors.push(c.r, c.g, c.b);
-    }
-  }
-  pos.needsUpdate = true;
-  terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  terrainGeo.computeVertexNormals();
-
-  const terrainMat = new THREE.MeshStandardMaterial({
+  // Créer le diorama épais rétro
+  const terrainGeo = createTerrain();
+  const terrainMat = new THREE.MeshLambertMaterial({
     vertexColors: true,
-    flatShading: true,
-    roughness: 0.8,
-    metalness: 0.2,
-    emissive: 0x111111,
-    emissiveIntensity: 0.15
+    flatShading: true
   });
   const terrain = new THREE.Mesh(terrainGeo, terrainMat);
   scene.add(terrain);
@@ -72,7 +189,8 @@ export function initWorld(scene) {
 
   entities.forEach(e => {
     const mesh = createEntityVisual(e.genes);
-    mesh.position.set(e.position.x, 0, e.position.y);
+    const terrainHeight = getTerrainHeight(e.position.x + 7, e.position.y + 7);
+    mesh.position.set(e.position.x, terrainHeight + 0.1, e.position.y);
     scene.add(mesh);
     entityMeshes.push(mesh);
   });

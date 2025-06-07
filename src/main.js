@@ -8,8 +8,10 @@ const camera = new THREE.OrthographicCamera(-15, 15, 15, -15, 0.1, 100);
 camera.position.set(20, 20, 20);
 camera.lookAt(0, 0, 0);
 
-const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('world'), antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('world'), antialias: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(1);
+renderer.domElement.style.imageRendering = 'pixelated';
 
 // OrbitControls pour naviguer avec la souris
 const controls = new OrbitControls(camera, renderer.domElement);
